@@ -9,6 +9,7 @@ public class User {
 
     @Id
     private String username;
+    private String language;
     private UserDetails userDetails;
 
     public UserDetails getUserDetails() {
@@ -23,13 +24,22 @@ public class User {
 
     }
 
-    public User(String username, UserDetails userDetails) {
+    public User(String username, String language, UserDetails userDetails) {
+        this.language=language;
         this.username = username;
         this.userDetails=userDetails;
     }
 
     public String getUsername() {
         return username;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public String setLanguage() {
+        return language;
     }
 
     public void setUsername(String username) {

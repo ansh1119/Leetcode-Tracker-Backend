@@ -15,6 +15,9 @@ import java.sql.SQLOutput;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +34,7 @@ public class LeetcodeService {
     @Autowired
     LeetcodeRepository leetcodeRepository;
 
-    public User getLeetCodeStats(String username) {
+    public User getLeetCodeStats(String username,String language) {
         // Ensure username is not null or empty
         if (username == null || username.trim().isEmpty()) {
             System.out.println("username null aaya h");
@@ -47,7 +50,7 @@ public class LeetcodeService {
             ResponseEntity<UserDetails> response = restTemplate.getForEntity(url, UserDetails.class);
 
             System.out.println(response.getBody());
-            User user = new User(username, response.getBody());
+            User user = new User(username, language, response.getBody());
             // Return the response body
             leetcodeRepository.save(user);
             return user;
@@ -64,46 +67,60 @@ public class LeetcodeService {
     }
 
 
-    public boolean attemptedToday(String username) {
-        User user = getLeetCodeStats(username);
-        UserDetails userDetails=null;
-        if(user!=null){
+    public List<Boolean> attemptedLast5Days(String username, String language) {
+        User user = getLeetCodeStats(username, language);
+        UserDetails userDetails = null;
+        if (user != null) {
             userDetails = user.getUserDetails();
         }
 
-        Map<Long, Integer> submissionMap=null;
-        if(userDetails!=null){
+        Map<Long, Integer> submissionMap = null;
+        if (userDetails != null) {
             submissionMap = userDetails.getSubmissionCalendar();
         }
 
+        // Prepare a list to hold the boolean values for the last 5 days
+        List<Boolean> submissionStatus = new ArrayList<>(Collections.nCopies(5, false));
 
-        // Get today's date in UTC (to match the format of the timestamp)
-        LocalDate today = Instant.now().atZone(ZoneId.of("UTC")).toLocalDate();
+        if (submissionMap != null) {
+            try {
+                // Get today's date in UTC
+                LocalDate today = Instant.now().atZone(ZoneId.of("UTC")).toLocalDate();
 
-        // Iterate through the submission map to check if any key matches today's date
-        if(submissionMap!=null){
-            try{
+                // Iterate through the submission map to check if any key matches the last 5 days
                 for (Map.Entry<Long, Integer> entry : submissionMap.entrySet()) {
                     // Convert the timestamp to LocalDate
                     LocalDate submissionDate = Instant.ofEpochSecond(entry.getKey())
                             .atZone(ZoneId.of("UTC"))
                             .toLocalDate();
 
-                    // Check if the submission date is the same as today's date
-                    if (submissionDate.isEqual(today)) {
-                        return true;
+                    // Calculate the difference in days between submissionDate and today
+                    long daysDifference = ChronoUnit.DAYS.between(submissionDate, today);
+
+                    // Check if the submission falls within the last 5 days (0 to 4 days difference)
+                    if (daysDifference >= 0 && daysDifference < 5) {
+                        // Mark the corresponding day as true
+                        submissionStatus.set((int) daysDifference, true);
                     }
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 System.out.println(e.toString());
             }
         }
-        return false;
+
+        return submissionStatus;
     }
+
 
     public List<User> getUsers() {
         return leetcodeRepository.findAll();
     }
+
+    public List<User> getUsersByLanguage(String language) {
+        return leetcodeRepository.findByLanguage(language);
+    }
+
+
 
     public void deleteUser(String username) {
         User user=leetcodeRepository.findByUsername(username).orElse(null);

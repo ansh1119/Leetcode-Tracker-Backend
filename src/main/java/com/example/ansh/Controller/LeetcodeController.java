@@ -14,10 +14,10 @@ public class LeetcodeController {
     @Autowired
     LeetcodeService leetcodeService;
 
-    @GetMapping("/new-user/{username}")
-    public User addUser(@PathVariable String username){
+    @GetMapping("/new-user/{language}/{username}")
+    public User addUser(@PathVariable String language,@PathVariable String username){
         try {
-            return leetcodeService.getLeetCodeStats(username);
+            return leetcodeService.getLeetCodeStats(username,language);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -25,10 +25,11 @@ public class LeetcodeController {
     }
 
 
-    @GetMapping("/today/{username}")
-    public boolean submissionToday(@PathVariable String username){
-        return leetcodeService.attemptedToday(username);
+    @GetMapping("/last5days/{language}/{username}")
+    public List<Boolean> submissionLast5Days(@PathVariable String language, @PathVariable String username) {
+        return leetcodeService.attemptedLast5Days(username, language);
     }
+
 
     @GetMapping("/users")
     public List<User> getUsers(){
